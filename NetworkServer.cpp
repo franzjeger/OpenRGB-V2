@@ -629,6 +629,16 @@ void NetworkServer::ListenThreadFunction(NetworkClientInfo * client_info)
         bytes_read = 0;
         if(header.pkt_size > 0)
         {
+            /*---------------------------------------------------------*\
+            | Reject packets larger than 128 MB to prevent DoS via      |
+            | memory exhaustion from malicious clients                   |
+            \*---------------------------------------------------------*/
+            if(header.pkt_size > (128 * 1024 * 1024))
+            {
+                LOG_ERROR("[NetworkServer] Packet size %u exceeds maximum, closing listener", header.pkt_size);
+                goto listen_done;
+            }
+
             data = new char[header.pkt_size];
 
             do
@@ -939,6 +949,11 @@ void NetworkServer::ListenThreadFunction(NetworkClientInfo * client_info)
 
             case NET_PACKET_ID_PLUGIN_SPECIFIC:
                 {
+                    if(data == NULL || header.pkt_size < sizeof(unsigned int))
+                    {
+                        break;
+                    }
+
                     unsigned int plugin_pkt_type = *((unsigned int*)(data));
                     unsigned int plugin_pkt_size = header.pkt_size - (sizeof(unsigned int));
                     unsigned char* plugin_data = (unsigned char*)(data + sizeof(unsigned int));
@@ -975,11 +990,16 @@ void NetworkServer::ListenThreadFunction(NetworkClientInfo * client_info)
 
             case NET_PACKET_ID_RGBCONTROLLER_ADDSEGMENT:
                 {
+                    if(data == NULL)
+                    {
+                        break;
+                    }
+
                     /*---------------------------------------------------------*\
                     | Verify the segment description size (first 4 bytes of     |
                     | data) matches the packet size in the header               |
                     \*---------------------------------------------------------*/
-                    if(header.pkt_size == *((unsigned int*)data))
+                    if(header.pkt_size >= sizeof(unsigned int) && header.pkt_size == *((unsigned int*)data))
                     {
                         if(header.pkt_dev_idx < controllers.size())
                         {

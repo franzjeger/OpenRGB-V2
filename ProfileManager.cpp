@@ -52,6 +52,16 @@ bool ProfileManager::SaveProfile(std::string profile_name, bool sizes)
         std::string filename = profile_name;
 
         /*---------------------------------------------------------*\
+        | Reject path traversal attempts in profile names           |
+        \*---------------------------------------------------------*/
+        if(filename.find("..") != std::string::npos
+        || filename.find('/') != std::string::npos
+        || filename.find('\\') != std::string::npos)
+        {
+            return false;
+        }
+
+        /*---------------------------------------------------------*\
         | Determine file extension                                  |
         \*---------------------------------------------------------*/
         if(sizes)
@@ -149,6 +159,13 @@ std::vector<RGBController*> ProfileManager::LoadProfileToList
     unsigned int                controller_size;
     unsigned int                controller_offset = 0;
 
+    if(profile_name.find("..") != std::string::npos
+    || profile_name.find('/') != std::string::npos
+    || profile_name.find('\\') != std::string::npos)
+    {
+        return temp_controllers;
+    }
+
     filesystem::path filename = configuration_directory / filesystem::u8path(profile_name);
 
     /*---------------------------------------------------------*\
@@ -203,6 +220,11 @@ std::vector<RGBController*> ProfileManager::LoadProfileToList
             while(!(controller_file.peek() == EOF))
             {
                 controller_file.read((char *)&controller_size, sizeof(controller_size));
+
+                if(controller_size == 0 || controller_size > (64 * 1024 * 1024))
+                {
+                    break;
+                }
 
                 unsigned char *controller_data = new unsigned char[controller_size];
 
@@ -436,6 +458,13 @@ bool ProfileManager::LoadProfileWithOptions
 void ProfileManager::DeleteProfile(std::string profile_name)
 {
     profile_name = StringUtils::remove_null_terminating_chars(profile_name);
+
+    if(profile_name.find("..") != std::string::npos
+    || profile_name.find('/') != std::string::npos
+    || profile_name.find('\\') != std::string::npos)
+    {
+        return;
+    }
 
     filesystem::path filename = configuration_directory / profile_name;
     filename.concat(".orp");
