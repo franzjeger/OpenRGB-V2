@@ -9,6 +9,7 @@
 |   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
+#include <algorithm>
 #include <string.h>
 #include "AsusMonitorController.h"
 #include "StringUtils.h"
@@ -89,9 +90,11 @@ void AsusMonitorController::SetDirect(std::vector<RGBColor> colors)
     usb_buf[0x00] = 0xEC;
     usb_buf[0x01] = 0x40;
     usb_buf[0x02] = 0x84;
-    usb_buf[0x04] = (uint8_t)colors.size();
+    size_t max_colors = (ASUS_MONITOR_REPORT_SIZE - 0x05) / 3;
+    size_t num_colors = std::min(colors.size(), max_colors);
+    usb_buf[0x04] = (uint8_t)num_colors;
 
-    for(size_t i = 0; i < colors.size(); i++)
+    for(size_t i = 0; i < num_colors; i++)
     {
         usb_buf[0x05 + (3 * i)]     = RGBGetRValue(colors[i]);
         usb_buf[0x05 + (3 * i + 1)] = RGBGetGValue(colors[i]);

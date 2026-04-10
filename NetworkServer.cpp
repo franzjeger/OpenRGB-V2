@@ -640,6 +640,8 @@ void NetworkServer::ListenThreadFunction(NetworkClientInfo * client_info)
                 if(tmp_bytes_read <= 0)
                 {
                     LOG_ERROR("[NetworkServer] recv_select failed receiving data, closing listener");
+                    delete[] data;
+                    data = nullptr;
                     goto listen_done;
                 }
                 bytes_read += tmp_bytes_read;

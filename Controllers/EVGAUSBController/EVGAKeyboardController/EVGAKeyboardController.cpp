@@ -9,6 +9,7 @@
 |   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
+#include <algorithm>
 #include "EVGAKeyboardController.h"
 #include "StringUtils.h"
 
@@ -236,7 +237,9 @@ void EVGAKeyboardController::SendColour(uint8_t mode, uint16_t speed, uint8_t br
     | Static, Breathing and Star modes have fixed colour sizes          |
     |   buffer[26] will be overwritten for these modes                  |
     \*-----------------------------------------------------------------*/
-    buffer[EVGA_KB_COLORS_SZ]   = (uint8_t)colors.size();
+    size_t max_breathing_colors  = (EVGA_KEYBOARD_CONTROLLER_ID_7_SIZE - 26) / 5;
+    size_t clamped_size          = std::min(colors.size(), max_breathing_colors);
+    buffer[EVGA_KB_COLORS_SZ]    = (uint8_t)clamped_size;
 
     switch(mode)
     {
@@ -245,7 +248,7 @@ void EVGAKeyboardController::SendColour(uint8_t mode, uint16_t speed, uint8_t br
             break;
 
         case EVGA_KEYBOARD_CONTROLLER_MODE_BREATHING:
-            for(size_t i = 0; i < colors.size(); i++)
+            for(size_t i = 0; i < clamped_size; i++)
             {
                 uint8_t offset      = (uint8_t)(26 + (i * 5));
 

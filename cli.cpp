@@ -325,8 +325,14 @@ bool ParseColors(std::string colors_string, DeviceOptions *options)
     return options->colors.size() > 0;
 }
 
-unsigned int ParseMode(DeviceOptions& options, std::vector<RGBController *> &rgb_controllers)
+int ParseMode(DeviceOptions& options, std::vector<RGBController *> &rgb_controllers)
 {
+    if(options.device < 0 || (size_t)options.device >= rgb_controllers.size())
+    {
+        std::cout << "Error: Device index " << options.device << " out of range" << std::endl;
+        return -1;
+    }
+
     // no need to check if --mode wasn't passed
     if (options.mode.size() == 0)
     {
@@ -346,7 +352,7 @@ unsigned int ParseMode(DeviceOptions& options, std::vector<RGBController *> &rgb
     }
 
     std::cout << "Error: Mode '" + options.mode + "' not available for device '" + rgb_controllers[options.device]->GetName() + "'" << std::endl;
-    return false;
+    return -1;
 }
 
 DeviceOptions* GetDeviceOptionsForDevID(Options *opts, int device)
@@ -1157,13 +1163,24 @@ int ProcessOptions(Options* options, std::vector<RGBController *>& rgb_controlle
 
 void ApplyOptions(DeviceOptions& options, std::vector<RGBController *>& rgb_controllers)
 {
+    if(options.device < 0 || (size_t)options.device >= rgb_controllers.size())
+    {
+        std::cout << "Error: Device index " << options.device << " out of range" << std::endl;
+        return;
+    }
+
     RGBController* device = rgb_controllers[options.device];
 
     /*---------------------------------------------------------*\
     | Set mode first, in case it's 'direct' (which affects      |
     | SetLED below)                                             |
     \*---------------------------------------------------------*/
-    unsigned int mode = ParseMode(options, rgb_controllers);
+    int mode = ParseMode(options, rgb_controllers);
+
+    if(mode < 0)
+    {
+        return;
+    }
 
     /*---------------------------------------------------------*\
     | If the user has specified random colours and the device   |
@@ -1222,10 +1239,15 @@ void ApplyOptions(DeviceOptions& options, std::vector<RGBController *>& rgb_cont
                     start_from  = &device->colors[0];
                     led_count   = (unsigned int)device->leds.size();
                 }
-                else
+                else if((size_t)options.zone < device->zones.size())
                 {
                     start_from  = device->zones[options.zone].colors;
                     led_count   = device->zones[options.zone].leds_count;
+                }
+                else
+                {
+                    std::cout << "Error: Zone " << options.zone << " out of range for device '" << device->GetName() << "'" << std::endl;
+                    break;
                 }
 
                 for(std::size_t led_idx = 0; led_idx < led_count; led_idx++)

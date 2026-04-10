@@ -544,12 +544,14 @@ void ResourceManager::UpdateDeviceList()
         | If not, check if the controller is already in the |
         | list at a different index                         |
         \*-------------------------------------------------*/
+        bool found = false;
         for(unsigned int controller_idx = 0; controller_idx < rgb_controllers.size(); controller_idx++)
         {
             if(rgb_controllers[controller_idx] == rgb_controllers_hw[hw_controller_idx])
             {
                 rgb_controllers.erase(rgb_controllers.begin() + controller_idx);
                 rgb_controllers.insert(rgb_controllers.begin() + hw_controller_idx, rgb_controllers_hw[hw_controller_idx]);
+                found = true;
                 break;
             }
         }
@@ -557,7 +559,10 @@ void ResourceManager::UpdateDeviceList()
         /*-------------------------------------------------*\
         | If it still hasn't been found, add it to the list |
         \*-------------------------------------------------*/
-        rgb_controllers.insert(rgb_controllers.begin() + hw_controller_idx, rgb_controllers_hw[hw_controller_idx]);
+        if(!found)
+        {
+            rgb_controllers.insert(rgb_controllers.begin() + hw_controller_idx, rgb_controllers_hw[hw_controller_idx]);
+        }
     }
 
     /*-----------------------------------------------------*\
@@ -594,10 +599,14 @@ void ResourceManager::DeviceListChanged()
     \*-----------------------------------------------------*/
     LOG_TRACE("[ResourceManager] Calling device list change callbacks.");
 
+    DeviceListChangeMutex.lock();
+
     for(std::size_t callback_idx = 0; callback_idx < DeviceListChangeCallbacks.size(); callback_idx++)
     {
         ResourceManager::DeviceListChangeCallbacks[callback_idx](DeviceListChangeCallbackArgs[callback_idx]);
     }
+
+    DeviceListChangeMutex.unlock();
 }
 
 void ResourceManager::DetectionProgressChanged()

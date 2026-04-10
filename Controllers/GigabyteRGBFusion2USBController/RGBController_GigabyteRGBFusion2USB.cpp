@@ -11,6 +11,8 @@
 |   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
+#include <chrono>
+#include <thread>
 #include "GigabyteFusion2USB_Devices.h"
 #include "LogManager.h"
 #include "RGBController_GigabyteRGBFusion2USB.h"
@@ -492,6 +494,12 @@ void RGBController_RGBFusion2USB::DeviceUpdateLEDs()
                 {
                     controller->SetStripBuiltinEffectState(hdr, false);
                     controller->SetStripColors(hdr, zones[zone_idx].colors, zones[zone_idx].leds_count);
+
+                    /*---------------------------------------------------------*\
+                    | Allow the controller to process strip data before         |
+                    | sending the next zone to avoid flooding the IT5711        |
+                    \*---------------------------------------------------------*/
+                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
                 }
 
                 /*---------------------------------------------------------*\

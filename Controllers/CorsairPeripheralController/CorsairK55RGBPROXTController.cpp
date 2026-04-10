@@ -7,6 +7,7 @@
 |   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
+#include <algorithm>
 #include "CorsairK55RGBPROXTController.h"
 #include "LogManager.h"
 #include "StringUtils.h"
@@ -227,9 +228,11 @@ void CorsairK55RGBPROXTController::SetHardwareMode
 
     if(usb_buf[0x0A] != CORSAIR_HW_MODE_COLOR_RANDOM)
     {
-        usb_buf[0x0E] = (unsigned char)colors.size();
+        size_t max_colors = (HID_PACKET_LENGTH - 0x0F) / 4;
+        size_t num_colors = std::min(colors.size(), max_colors);
+        usb_buf[0x0E] = (unsigned char)num_colors;
 
-        for(size_t i = 0; i < colors.size(); ++i)
+        for(size_t i = 0; i < num_colors; ++i)
         {
             usb_buf[0x0F + i * 4] = 0xFF;
             usb_buf[0x10 + i * 4] = RGBGetBValue(colors[i]);

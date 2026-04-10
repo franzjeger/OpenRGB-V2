@@ -81,7 +81,7 @@ void ArcticController::SetChannels(std::vector<RGBColor> colors)
         buffer[offset + 0x02] = (char)std::min<unsigned int>(254, RGBGetBValue(colors[channel]));
     }
 
-    serialport.serial_write(buffer, sizeof(buffer));
+    serialport.serial_write(buffer, ARCTIC_COMMAND_BUFFER_LENGTH(colors.size() * 3));
 
     delete[] buffer;
 }

@@ -338,7 +338,7 @@ private:
     /*-----------------------------------------------------*\
     | Device List Changed Callback                          |
     \*-----------------------------------------------------*/
-    std::mutex                                  DeviceListChangeMutex;
+    std::recursive_mutex                         DeviceListChangeMutex;
     std::vector<DeviceListChangeCallback>       DeviceListChangeCallbacks;
     std::vector<void *>                         DeviceListChangeCallbackArgs;
 

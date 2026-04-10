@@ -1048,12 +1048,26 @@ void RGBController::ReadDeviceDescription(unsigned char* data_buf, unsigned int 
             /*---------------------------------------------------------*\
             | Copy in matrix map                                        |
             \*---------------------------------------------------------*/
-            new_map->map = new unsigned int[new_map->height * new_map->width];
-
-            for(unsigned int matrix_idx = 0; matrix_idx < (new_map->height * new_map->width); matrix_idx++)
+            /*---------------------------------------------------------*\
+            | Validate matrix dimensions to prevent integer overflow    |
+            \*---------------------------------------------------------*/
+            if(new_map->height == 0 || new_map->width == 0
+            || new_map->height > 1024 || new_map->width > 1024)
             {
-                memcpy(&new_map->map[matrix_idx], &data_buf[data_ptr], sizeof(new_map->map[matrix_idx]));
-                data_ptr += sizeof(new_map->map[matrix_idx]);
+                new_map->map    = NULL;
+                new_map->height = 0;
+                new_map->width  = 0;
+            }
+            else
+            {
+                unsigned int map_size = new_map->height * new_map->width;
+                new_map->map = new unsigned int[map_size];
+
+                for(unsigned int matrix_idx = 0; matrix_idx < map_size; matrix_idx++)
+                {
+                    memcpy(&new_map->map[matrix_idx], &data_buf[data_ptr], sizeof(new_map->map[matrix_idx]));
+                    data_ptr += sizeof(new_map->map[matrix_idx]);
+                }
             }
         }
         else
@@ -1671,7 +1685,7 @@ void RGBController::SetZoneColorDescription(unsigned char* data_buf)
     /*---------------------------------------------------------*\
     | Check if we aren't reading beyond the list of zones.      |
     \*---------------------------------------------------------*/
-    if(((size_t)zone_idx) > zones.size())
+    if(((size_t)zone_idx) >= zones.size())
     {
         return;
     }
@@ -1947,6 +1961,11 @@ void RGBController::SetupColors()
 
 unsigned int RGBController::GetLEDsInZone(unsigned int zone)
 {
+    if(zone >= zones.size())
+    {
+        return(0);
+    }
+
     unsigned int leds_count = zones[zone].leds_count;
 
     if(zones[zone].flags & ZONE_FLAG_RESIZE_EFFECTS_ONLY)
@@ -1990,6 +2009,11 @@ void RGBController::SetAllLEDs(RGBColor color)
 
 void RGBController::SetAllZoneLEDs(int zone, RGBColor color)
 {
+    if(zone < 0 || (size_t)zone >= zones.size())
+    {
+        return;
+    }
+
     for (std::size_t color_idx = 0; color_idx < GetLEDsInZone(zone); color_idx++)
     {
         zones[zone].colors[color_idx] = color;
