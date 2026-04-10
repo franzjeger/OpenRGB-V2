@@ -320,6 +320,7 @@ public:
     void                    SetLedCount(unsigned int c0, unsigned int c1, unsigned int c2, unsigned int c3);
     void                    SetLEDEffect(int led, int mode, unsigned int speed, unsigned char brightness, bool random, uint32_t* color);
     bool                    SetStripBuiltinEffectState(int hdr, bool enable);
+    void                    InvalidateEffectState();
     void                    SetStripColors(unsigned int hdr, RGBColor * colors, unsigned int num_colors, int single_led = -1);
 
     EncodedCalibration      GetCalibration(bool refresh_from_hw = false);

@@ -408,6 +408,16 @@ bool RGBFusion2USBController::SetStripBuiltinEffectState(int hdr, bool enable)
     return res;
 }
 
+void RGBFusion2USBController::InvalidateEffectState()
+{
+    /*---------------------------------------------------------*\
+    | Invert the cached effect state so the next call to        |
+    | SetStripBuiltinEffectState will always send a CC report   |
+    | regardless of whether the bitmask appears unchanged.      |
+    \*---------------------------------------------------------*/
+    effect_disabled = ~effect_disabled;
+}
+
 /*---------------------------------------------------------*\
 | Persist LED config data                                   |
 \*---------------------------------------------------------*/
