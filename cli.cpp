@@ -407,6 +407,7 @@ void OptionHelp()
     help_text += "--server-host                            Sets the SDK's server host. Default: 0.0.0.0 (all network interfaces)\n";
     help_text += "--server-port                            Sets the SDK's server port. Default: 6742 (1024-65535)\n";
     help_text += "-l,  --list-devices                      Lists every compatible device with their number\n";
+    help_text += "-lz, --list-zones                        Lists all zones for each device with LED counts and type info\n";
     help_text += "-d,  --device [0-9 | \"name\"]             Selects device to apply colors and/or effect to, or applies to all devices if omitted\n";
     help_text += "                                           Basic string search is implemented 3 characters or more\n";
     help_text += "                                           Can be specified multiple times with different modes and colors\n";
@@ -460,6 +461,54 @@ void OptionVersion()
     version_text += "\n";
 
     std::cout << version_text << std::endl;
+}
+
+void OptionListZones(std::vector<RGBController *>& rgb_controllers)
+{
+    ResourceManager::get()->WaitForDeviceDetection();
+
+    for(std::size_t controller_idx = 0; controller_idx < rgb_controllers.size(); controller_idx++)
+    {
+        RGBController *controller = rgb_controllers[controller_idx];
+
+        std::cout << controller_idx << ": " << controller->GetName() << std::endl;
+
+        if(controller->zones.empty())
+        {
+            std::cout << "  (no zones)" << std::endl;
+        }
+
+        for(std::size_t zone_idx = 0; zone_idx < controller->zones.size(); zone_idx++)
+        {
+            zone& z = controller->zones[zone_idx];
+            std::string type_str;
+
+            switch(z.type)
+            {
+                case ZONE_TYPE_SINGLE:  type_str = "Single";  break;
+                case ZONE_TYPE_LINEAR:  type_str = "Linear";  break;
+                case ZONE_TYPE_MATRIX:  type_str = "Matrix";  break;
+                default:                type_str = "Unknown"; break;
+            }
+
+            std::cout << "  Zone " << zone_idx << ": " << z.name << std::endl;
+            std::cout << "    Type:      " << type_str << std::endl;
+            std::cout << "    LEDs:      " << z.leds_count;
+
+            if(z.leds_min != z.leds_max)
+            {
+                std::cout << " (resizable: " << z.leds_min << "-" << z.leds_max << ")";
+            }
+
+            std::cout << std::endl;
+
+            if(z.type == ZONE_TYPE_MATRIX && z.matrix_map != NULL)
+            {
+                std::cout << "    Matrix:    " << z.matrix_map->width << "x" << z.matrix_map->height << std::endl;
+            }
+        }
+        std::cout << std::endl;
+    }
 }
 
 void OptionListDevices(std::vector<RGBController *>& rgb_controllers)
@@ -961,6 +1010,15 @@ int ProcessOptions(Options* options, std::vector<RGBController *>& rgb_controlle
         if(option == "--list-devices" || option == "-l")
         {
             OptionListDevices(rgb_controllers);
+            exit(0);
+        }
+
+        /*---------------------------------------------------------*\
+        | -lz / --list-zones (no arguments)                         |
+        \*---------------------------------------------------------*/
+        else if(option == "--list-zones" || option == "-lz")
+        {
+            OptionListZones(rgb_controllers);
             exit(0);
         }
 

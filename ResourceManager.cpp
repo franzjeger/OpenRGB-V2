@@ -18,6 +18,9 @@
 
 #include <stdlib.h>
 #include <string>
+#ifdef __linux__
+#include <unistd.h>
+#endif
 #include <hidapi.h>
 #include "cli.h"
 #include "pci_ids/pci_ids.h"
@@ -1183,6 +1186,19 @@ void ResourceManager::DetectDevicesCoroutine()
     LOG_INFO("------------------------------------------------------");
     LOG_INFO("|             Detecting I2C interfaces               |");
     LOG_INFO("------------------------------------------------------");
+
+#ifdef __linux__
+    /*-----------------------------------------------------*\
+    | Attempt to load i2c-dev module if not already loaded  |
+    \*-----------------------------------------------------*/
+    if(geteuid() == 0)
+    {
+        if(system("modprobe i2c-dev 2>/dev/null") == 0)
+        {
+            LOG_INFO("[ResourceManager] Loaded i2c-dev kernel module");
+        }
+    }
+#endif
 
     bool i2c_interface_fail = false;
 
