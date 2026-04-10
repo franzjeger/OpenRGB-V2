@@ -171,7 +171,7 @@ void LogitechG915Controller::BeginModeSet()
     | Send packet                                           |
     \*-----------------------------------------------------*/
     hid_write(dev_handle, usb_buf, 4);
-    hid_read(dev_handle,  usb_buf, RESPONSE_LEN);
+    hid_read_timeout(dev_handle, usb_buf, RESPONSE_LEN, LOGITECH_READ_TIMEOUT);
 
     /*-----------------------------------------------------*\
     | Zero out buffer                                       |
@@ -190,7 +190,7 @@ void LogitechG915Controller::BeginModeSet()
     | Send packet                                           |
     \*-----------------------------------------------------*/
     hid_write(dev_handle, usb_buf, 4);
-    hid_read(dev_handle,  usb_buf, RESPONSE_LEN);
+    hid_read_timeout(dev_handle, usb_buf, RESPONSE_LEN, LOGITECH_READ_TIMEOUT);
 }
 
 void LogitechG915Controller::InitializeModeSet()
@@ -217,7 +217,7 @@ void LogitechG915Controller::InitializeModeSet()
     | Send packet                                           |
     \*-----------------------------------------------------*/
     hid_write(dev_handle, usb_buf, 7);
-    hid_read(dev_handle,  usb_buf, RESPONSE_LEN);
+    hid_read_timeout(dev_handle, usb_buf, RESPONSE_LEN, LOGITECH_READ_TIMEOUT);
 }
 
 void LogitechG915Controller::InitializeDirect()
@@ -241,7 +241,7 @@ void LogitechG915Controller::InitializeDirect()
     | Send packet                                           |
     \*-----------------------------------------------------*/
     hid_write(dev_handle, usb_buf, 4);
-    hid_read(dev_handle,  usb_buf, RESPONSE_LEN);
+    hid_read_timeout(dev_handle, usb_buf, RESPONSE_LEN, LOGITECH_READ_TIMEOUT);
 
     /*-----------------------------------------------------*\
     | Zero out buffer                                       |
@@ -260,7 +260,7 @@ void LogitechG915Controller::InitializeDirect()
     | Send packet                                           |
     \*-----------------------------------------------------*/
     hid_write(dev_handle, usb_buf, 4);
-    hid_read(dev_handle,  usb_buf, RESPONSE_LEN);
+    hid_read_timeout(dev_handle, usb_buf, RESPONSE_LEN, LOGITECH_READ_TIMEOUT);
 
     /*-----------------------------------------------------*\
     | Zero out buffer                                       |
@@ -280,7 +280,7 @@ void LogitechG915Controller::InitializeDirect()
     | Send packet                                           |
     \*-----------------------------------------------------*/
     hid_write(dev_handle, usb_buf, 17);
-    hid_read(dev_handle,  usb_buf, MESSAGE_LEN);
+    hid_read_timeout(dev_handle, usb_buf, MESSAGE_LEN, LOGITECH_READ_TIMEOUT);
 
     /*-----------------------------------------------------*\
     | Zero out buffer                                       |
@@ -301,7 +301,7 @@ void LogitechG915Controller::InitializeDirect()
     | Send packet                                           |
     \*-----------------------------------------------------*/
     hid_write(dev_handle, usb_buf, 17);
-    hid_read(dev_handle,  usb_buf, RESPONSE_LEN);
+    hid_read_timeout(dev_handle, usb_buf, RESPONSE_LEN, LOGITECH_READ_TIMEOUT);
 }
 
 void LogitechG915Controller::SendSingleLed
@@ -434,5 +434,5 @@ void LogitechG915Controller::SendMode
     | Send packet                                           |
     \*-----------------------------------------------------*/
     hid_write(dev_handle, usb_buf, HEADER_SIZE + 13);
-    hid_read(dev_handle, usb_buf, RESPONSE_LEN);
+    hid_read_timeout(dev_handle, usb_buf, RESPONSE_LEN, LOGITECH_READ_TIMEOUT);
 }

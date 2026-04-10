@@ -351,6 +351,55 @@ void DetectLogitechKeyboardG915(hid_device_info* info, const std::string& name)
 
     if(dev)
     {
+        /*-----------------------------------------------------*\
+        | Drain any stale HID events from the buffer before     |
+        | querying, then verify PerKeyLighting (0x8081) exists. |
+        | Without this, multiple receivers create phantom G915  |
+        | instances that hang on every LED update.              |
+        \*-----------------------------------------------------*/
+        unsigned char drain[20];
+        while(hid_read_timeout(dev, drain, sizeof(drain), 100) > 0) {}
+
+        /*-----------------------------------------------------*\
+        | Query IRoot for feature 0x8081 (PerKeyLighting).      |
+        | Use a unique sw_id (0x07) to match response.          |
+        \*-----------------------------------------------------*/
+        unsigned char query[7] = { 0x10, 0x01, 0x00, 0x07, 0x80, 0x81, 0x00 };
+        unsigned char resp[20] = {};
+
+        hid_write(dev, query, sizeof(query));
+
+        bool found = false;
+        for(int attempt = 0; attempt < 10; attempt++)
+        {
+            int res = hid_read_timeout(dev, resp, sizeof(resp), 200);
+
+            LOG_DEBUG("[G915 Detect] path=%s attempt=%d res=%d resp=%02X %02X %02X %02X %02X",
+                info->path, attempt, res,
+                res > 0 ? resp[0] : 0, res > 1 ? resp[1] : 0,
+                res > 2 ? resp[2] : 0, res > 3 ? resp[3] : 0,
+                res > 4 ? resp[4] : 0);
+
+            if(res >= 5 && (resp[0] == 0x10 || resp[0] == 0x11)
+            && resp[1] == 0x01 && resp[2] == 0x00
+            && (resp[3] & 0x0F) == 0x07 && resp[4] != 0x00)
+            {
+                found = true;
+                break;
+            }
+
+            if(res <= 0)
+            {
+                break;
+            }
+        }
+
+        if(!found)
+        {
+            hid_close(dev);
+            return;
+        }
+
         LogitechG915Controller*     controller     = new LogitechG915Controller(dev, false, name);
         RGBController_LogitechG915* rgb_controller = new RGBController_LogitechG915(controller, is_tkl);
 
@@ -365,6 +414,21 @@ void DetectLogitechKeyboardG915Wired(hid_device_info* info, const std::string& n
 
     if(dev)
     {
+        /*-----------------------------------------------------*\
+        | Verify keyboard responds before registering            |
+        \*-----------------------------------------------------*/
+        unsigned char ping[7] = { 0x10, 0xFF, 0x00, 0x10, 0x00, 0x00, 0xAA };
+        unsigned char resp[7] = {};
+
+        hid_write(dev, ping, sizeof(ping));
+        int res = hid_read_timeout(dev, resp, sizeof(resp), 500);
+
+        if(res < 0 || (res >= 3 && resp[2] == 0xFF))
+        {
+            hid_close(dev);
+            return;
+        }
+
         LogitechG915Controller*     controller     = new LogitechG915Controller(dev, true, name);
         RGBController_LogitechG915* rgb_controller = new RGBController_LogitechG915(controller, is_tkl);
 
