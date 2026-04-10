@@ -685,6 +685,14 @@ void RGBController_RGBFusion2USB::UpdateSingleLED(int led)
 
 void RGBController_RGBFusion2USB::DeviceUpdateMode()
 {
+    /*---------------------------------------------------------*\
+    | Reset the controller state before applying the new mode   |
+    | to ensure clean transition between effect types.          |
+    | Without this, the IT5711 can get stuck when rapidly       |
+    | switching between modes because SetStripBuiltinEffectState|
+    | skips sends when the cached bitmask hasn't changed.       |
+    \*---------------------------------------------------------*/
+    controller->SetStripBuiltinEffectState(-1, false);
     DeviceUpdateLEDs();
 }
 
