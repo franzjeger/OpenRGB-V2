@@ -353,39 +353,68 @@ void DetectLogitechKeyboardG915(hid_device_info* info, const std::string& name)
     if(dev)
     {
         /*-----------------------------------------------------*\
-        | Drain any stale HID events from the buffer before     |
-        | querying, then verify PerKeyLighting (0x8081) exists. |
-        | Without this, multiple receivers create phantom G915  |
-        | instances that hang on every LED update.              |
+        | Verify the paired device is actually a G915 keyboard. |
+        | Multiple Logitech receivers share the same PID, so    |
+        | we query the device name via HID++ and check it.      |
         \*-----------------------------------------------------*/
         unsigned char drain[20];
         while(hid_read_timeout(dev, drain, sizeof(drain), 100) > 0) {}
 
         /*-----------------------------------------------------*\
-        | Query IRoot for feature 0x8081 (PerKeyLighting).      |
-        | Use a unique sw_id (0x07) to match response.          |
+        | Step 1: Find DeviceName feature (0x0005) index        |
         \*-----------------------------------------------------*/
-        unsigned char query[7] = { 0x10, 0x01, 0x00, 0x07, 0x80, 0x81, 0x00 };
+        unsigned char query[20] = { 0x10, 0x01, 0x00, 0x07, 0x00, 0x05, 0x00 };
         unsigned char resp[20] = {};
+        unsigned char name_feat_idx = 0;
 
-        hid_write(dev, query, sizeof(query));
+        hid_write(dev, query, 7);
 
-        bool found = false;
-        for(int attempt = 0; attempt < 10; attempt++)
+        for(int attempt = 0; attempt < 5; attempt++)
         {
-            int res = hid_read_timeout(dev, resp, sizeof(resp), 200);
-
-            LOG_DEBUG("[G915 Detect] path=%s attempt=%d res=%d resp=%02X %02X %02X %02X %02X",
-                info->path, attempt, res,
-                res > 0 ? resp[0] : 0, res > 1 ? resp[1] : 0,
-                res > 2 ? resp[2] : 0, res > 3 ? resp[3] : 0,
-                res > 4 ? resp[4] : 0);
+            int res = hid_read_timeout(dev, resp, sizeof(resp), 300);
 
             if(res >= 5 && (resp[0] == 0x10 || resp[0] == 0x11)
-            && resp[1] == 0x01 && resp[2] == 0x00
-            && (resp[3] & 0x0F) == 0x07 && resp[4] != 0x00)
+            && resp[2] == 0x00 && (resp[3] & 0x0F) == 0x07)
             {
-                found = true;
+                name_feat_idx = resp[4];
+                break;
+            }
+
+            if(res <= 0)
+            {
+                break;
+            }
+        }
+
+        if(name_feat_idx == 0)
+        {
+            hid_close(dev);
+            return;
+        }
+
+        /*-----------------------------------------------------*\
+        | Step 2: Read device name string                       |
+        \*-----------------------------------------------------*/
+        while(hid_read_timeout(dev, drain, sizeof(drain), 50) > 0) {}
+
+        memset(query, 0, sizeof(query));
+        query[0] = 0x11;
+        query[1] = 0x01;
+        query[2] = name_feat_idx;
+        query[3] = 0x17;           /* func=1 (getDeviceName), sw_id=7 */
+        query[4] = 0x00;           /* offset 0 */
+
+        hid_write(dev, query, 20);
+
+        bool found = false;
+        for(int attempt = 0; attempt < 5; attempt++)
+        {
+            int res = hid_read_timeout(dev, resp, sizeof(resp), 300);
+
+            if(res >= 5 && resp[2] == name_feat_idx)
+            {
+                std::string dev_name((char*)&resp[4], 16);
+                found = (dev_name.find("G915") != std::string::npos);
                 break;
             }
 
