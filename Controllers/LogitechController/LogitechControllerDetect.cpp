@@ -430,6 +430,12 @@ void DetectLogitechKeyboardG915(hid_device_info* info, const std::string& name)
             return;
         }
 
+        /*-----------------------------------------------------*\
+        | Drain any leftover responses from detection queries   |
+        | before passing the handle to the controller           |
+        \*-----------------------------------------------------*/
+        while(hid_read_timeout(dev, drain, sizeof(drain), 100) > 0) {}
+
         LogitechG915Controller*     controller     = new LogitechG915Controller(dev, false, name);
         RGBController_LogitechG915* rgb_controller = new RGBController_LogitechG915(controller, is_tkl);
 
